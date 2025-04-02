@@ -28,11 +28,21 @@ db.connect(err => {
 app.post("/register", (req, res) => {
     const { name, phone, password, confirmPassword } = req.body;
 
-    console.log("Received Data:", req.body); // ✅ Log request data for debugging
+    console.log("Received Data:", req.body);
+
+    // ✅ Check if all fields are provided
+    if (!name || !phone || !password || !confirmPassword) {
+        return res.status(400).json({ message: "All fields are mandatory!" });
+    }
+
+    // ✅ Validate phone number length
+    if (!/^\d{10}$/.test(phone)) {
+        return res.status(400).json({ message: "Mobile number must be exactly 10 digits!" });
+    }
 
     // ✅ Check if passwords match
     if (password !== confirmPassword) {
-        return res.status(400).json({ message: "Passwords do not match." });
+        return res.status(400).json({ message: "Passwords do not match!" });
     }
 
     const checkUserQuery = "SELECT * FROM users WHERE phone = ?";
@@ -56,6 +66,7 @@ app.post("/register", (req, res) => {
         });
     });
 });
+
 
 // ✅ Login Route
 app.post("/login", (req, res) => {

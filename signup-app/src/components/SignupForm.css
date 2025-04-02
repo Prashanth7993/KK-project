@@ -1,0 +1,52 @@
+/* ✅ Popup Overlay */
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* ✅ Popup Box */
+  /* ✅ Popup Box (Smaller Text) */
+.popup-box {
+    background-color: white;
+    padding: 30px;
+    border-radius: 12px;
+    font-size: 18px; /* Reduced text size */
+    font-weight: bold;
+    color: green;
+    box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    width: 280px; /* Slightly reduced width */
+  }
+  
+  /* ✅ Green Circle */
+  .checkmark-circle {
+    width: 80px; /* Slightly smaller */
+    height: 80px;
+    background-color: #4caf50; /* Green */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    position: relative;
+  }
+  
+  /* ✅ Thicker Checkmark */
+  .checkmark {
+    width: 35px;
+    height: 20px;
+    border: 6px solid white;
+    border-top: none;
+    border-right: none;
+    transform: rotate(-45deg);
+    position: absolute;
+  }
+  
