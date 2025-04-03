@@ -1,12 +1,23 @@
 const express = require("express");
 const mysql = require("mysql");
 const cors = require("cors");
+const bcrypt = require("bcryptjs"); // ✅ Import bcrypt
 const bodyParser = require("body-parser");
-require("dotenv").config();
 
 const app = express();
-app.use(cors());
+//app.use(cors({ origin: "http://localhost:5173" })); // ✅ Allow frontend requests
 app.use(bodyParser.json());
+//const cors = require("cors");
+
+app.use(
+    cors({
+        origin: "http://localhost:5173", // ✅ Allow your frontend origin
+        credentials: true, // ✅ Allow credentials (cookies, sessions, etc.)
+        methods: ["GET", "POST", "PUT", "DELETE"], // ✅ Allow all necessary methods
+        allowedHeaders: ["Content-Type", "Authorization"], // ✅ Ensure headers are allowed
+    })
+);
+
 
 // MySQL Database Connection
 const db = mysql.createConnection({
@@ -21,76 +32,63 @@ db.connect(err => {
         console.error("Database connection failed: " + err.stack);
         return;
     }
-    console.log("Connected to MySQL database.");
+    console.log("✅ Connected to MySQL database.");
 });
 
-// ✅ Signup Route with Confirm Password Check
-app.post("/register", (req, res) => {
+// ✅ Register User (Hash Password)
+app.post("/register", async (req, res) => {
     const { name, phone, password, confirmPassword } = req.body;
 
-    console.log("Received Data:", req.body);
-
-    // ✅ Check if all fields are provided
     if (!name || !phone || !password || !confirmPassword) {
-        return res.status(400).json({ message: "All fields are mandatory!" });
+        return res.status(400).json({ message: "All fields are required!" });
     }
 
-    // ✅ Validate phone number length
-    if (!/^\d{10}$/.test(phone)) {
-        return res.status(400).json({ message: "Mobile number must be exactly 10 digits!" });
-    }
-
-    // ✅ Check if passwords match
     if (password !== confirmPassword) {
         return res.status(400).json({ message: "Passwords do not match!" });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10); // ✅ Hash password
+
     const checkUserQuery = "SELECT * FROM users WHERE phone = ?";
     db.query(checkUserQuery, [phone], (err, results) => {
-        if (err) {
-            console.error("Database Error:", err);
-            return res.status(500).json({ error: err.message });
-        }
-
-        if (results.length > 0) {
-            return res.status(400).json({ message: "User already exists. Please sign in." });
-        }
+        if (err) return res.status(500).json({ error: err.message });
+        if (results.length > 0) return res.status(400).json({ message: "User already exists!" });
 
         const sql = "INSERT INTO users (name, phone, password) VALUES (?, ?, ?)";
-        db.query(sql, [name, phone, password], (err, result) => {
-            if (err) {
-                console.error("Insert Error:", err);
-                return res.status(500).json({ error: err.message });
-            }
-            res.json({ message: "User registered successfully" });
+        db.query(sql, [name, phone, hashedPassword], (err, result) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: "User registered successfully!" });
         });
     });
 });
 
-
-// ✅ Login Route
-app.post("/login", (req, res) => {
+// ✅ Login User (Verify Hashed Password)
+app.post("/login", async (req, res) => {
     const { phone, password } = req.body;
 
-    console.log("Login Attempt:", req.body); // ✅ Log login request for debugging
+    const sql = "SELECT * FROM users WHERE phone = ?";
+    db.query(sql, [phone], async (err, results) => {
+        if (err) return res.status(500).json({ error: "Database error!" });
 
-    const sql = "SELECT * FROM users WHERE phone = ? AND password = ?";
-    db.query(sql, [phone, password], (err, results) => {
-        if (err) {
-            console.error("Database Error:", err);
-            return res.status(500).json({ error: err.message });
+        if (results.length === 0) {
+            return res.status(401).json({ message: "Invalid phone number or password!" });
         }
 
-        if (results.length > 0) {
-            res.json({ message: "Login successful", user: results[0] });
-        } else {
-            res.status(401).json({ message: "Invalid phone number or password" });
+        const user = results[0];
+
+        // ✅ Compare hashed password
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: "Invalid phone number or password!" });
         }
+
+        res.json({ message: "Login successful", user });
     });
 });
+
 
 // ✅ Start Server
 const PORT = 5000;
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`🚀 Server is running on port ${PORT}`);
 });
