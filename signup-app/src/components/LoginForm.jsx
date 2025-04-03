@@ -71,7 +71,7 @@ const LoginForm = () => {
           {/* ✅ Buttons placed side by side */}
           <div className="button-container">
             <button type="submit" className="login-button">Login</button>
-            <button type="button" className="signup-button" onClick={() => navigate("/")}>Signup</button>
+            <button type="button" className="signup-button" onClick={() => navigate("/signup")}>Signup</button>
           </div>
 
           {/* ✅ Error message below buttons */}

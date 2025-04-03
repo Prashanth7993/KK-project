@@ -1,90 +1,100 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import { auth, RecaptchaVerifier, signInWithPhoneNumber } from "../firebaseConfig";
 import { useNavigate } from "react-router-dom";
-import React from "react";
-import "./SignupForm.css"; // Import CSS
+import "../components/SignupForm.css"; // Ensure CSS is linked
 
 const SignupForm = () => {
-  const [formData, setFormData] = useState({ name: "", phone: "", password: "", confirmPassword: "" });
-  const [error, setError] = useState("");
-  const [showPopup, setShowPopup] = useState(false);
-  const navigate = useNavigate();
+    const [phoneNumber, setPhoneNumber] = useState("");
+    const [otp, setOtp] = useState("");
+    const [confirmResult, setConfirmResult] = useState(null);
+    const [error, setError] = useState("");
+    const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
+    const setupRecaptcha = () => {
+        if (!window.recaptchaVerifier) {
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+                size: "invisible",
+                callback: () => {
+                    console.log("Recaptcha solved!");
+                },
+            });
+        }
+    };
 
-    // ✅ Validation: All fields required & passwords must match
-    if (!formData.name || !formData.phone || !formData.password || !formData.confirmPassword) {
-      setError("All fields are mandatory!");
-      return;
-    }
+    const sendOtp = async () => {
+        setError("");
 
-    if (formData.phone.length !== 10) {
-      setError("Phone number must be exactly 10 digits!");
-      return;
-    }
+        if (!phoneNumber.match(/^\+?\d{10,15}$/)) {
+            setError("Invalid phone number format!");
+            return;
+        }
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match!");
-      return;
-    }
+        setupRecaptcha();
+        const appVerifier = window.recaptchaVerifier;
 
-    try {
-      const response = await fetch("http://localhost:5000/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+        try {
+            const confirmation = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+            setConfirmResult(confirmation);
+            console.log("OTP Sent Successfully!");
+        } catch (err) {
+            setError("Failed to send OTP: " + err.message);
+        }
+    };
 
-      const data = await response.json();
-      if (response.ok) {
-        setShowPopup(true); // ✅ Show popup
+    const verifyOtp = async () => {
+        if (!otp) {
+            setError("Enter the OTP received.");
+            return;
+        }
 
-        // ✅ Auto-redirect after 2 seconds
-        setTimeout(() => {
-          setShowPopup(false);
-          navigate("/login");
-        }, 2000);
-      } else {
-        setError(data.message || "Error signing up");
-      }
-    } catch (error) {
-      setError("Server error. Try again later.");
-    }
-  };
+        try {
+            await confirmResult.confirm(otp);
+            console.log("✅ OTP Verified! Navigating to Login...");
+            navigate("/login");
+        } catch (err) {
+            setError("Invalid OTP. Please try again.");
+        }
+    };
 
-  return (
-    <div className="signup-container">
-      <h2>Signup Page</h2>
-      <form onSubmit={handleSubmit}>
-        <input type="text" placeholder="Name" onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
-        <input type="tel" placeholder="Phone (10 digits)" onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required />
-        <input type="password" placeholder="Password" onChange={(e) => setFormData({ ...formData, password: e.target.value })} required />
-        <input type="password" placeholder="Confirm Password" onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} required />
+    return (
+        <div className="signup-container">
+            <h2>Signup</h2>
+            <input
+                type="tel"
+                placeholder="Enter Phone Number"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+            />
+            <div id="recaptcha-container"></div>
 
-        {/* ✅ Buttons placed side by side */}
-        <div className="button-container">
-          <button type="submit" className="signup-button">Signup</button>
-          <button type="button" className="login-button" onClick={() => navigate("/login")}>Login</button>
-        </div>
+            {confirmResult && (
+                <input
+                    type="text"
+                    placeholder="Enter OTP"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                />
+            )}
 
-        {/* ✅ Error message below buttons */}
-        {error && <div className="error-message">{error}</div>}
-      </form>
+            <div className="button-container">
+                <button onClick={sendOtp} className="send-otp-button">
+                    Send OTP
+                </button>
 
-      {/* ✅ Animated Popup Overlay */}
-      {showPopup && (
-        <div className="popup-overlay">
-          <div className="popup-box">
-            <div className="checkmark-circle">
-              <div className="checkmark"></div>
+                {confirmResult && (
+                    <button onClick={verifyOtp} className="verify-otp-button">
+                        Verify OTP
+                    </button>
+                )}
             </div>
-            <p>Signup Successful!</p>
-          </div>
+
+            <button onClick={() => navigate("/login")} className="signup-button">
+                Already have an account? Login
+            </button>
+
+            {error && <div className="error-message">{error}</div>}
         </div>
-      )}
-    </div>
-  );
+    );
 };
 
 export default SignupForm;
