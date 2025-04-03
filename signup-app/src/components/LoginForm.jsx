@@ -21,25 +21,35 @@ const LoginForm = () => {
     try {
       const response = await fetch("http://localhost:5000/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+            "Content-Type": "application/json",
+        },
+        credentials: "include", // ✅ Ensures cookies/sessions are sent
         body: JSON.stringify(formData),
-      });
+    });
+    
 
       const data = await response.json();
-      if (response.ok) {
-        setLoginSuccess(true); // Show success popup
 
-        // Redirect after 2.5s
-        setTimeout(() => {
-          navigate("/dashboard");
-        }, 2500);
-      } else {
-        setError(data.message || "Invalid credentials");
+      if (!response.ok) {
+        throw new Error(data.message || "Invalid credentials");
       }
+
+      console.log("✅ Login Successful!", data);
+      setLoginSuccess(true);
+
+      // ✅ Store user session (JWT or localStorage)
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 2500);
     } catch (error) {
-      setError("Server error. Try again later.");
+      console.error("Login Error:", error.message);
+      setError(error.message);
     }
   };
+
 
   return (
     <>

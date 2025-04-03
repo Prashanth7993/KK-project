@@ -18,7 +18,8 @@ input {
 }
 
 .send-otp-button,
-.verify-otp-button {
+.verify-otp-button,
+.signup-final-button {
   background-color: #007bff;
   color: white;
   border: none;
@@ -29,7 +30,8 @@ input {
 }
 
 .send-otp-button:hover,
-.verify-otp-button:hover {
+.verify-otp-button:hover,
+.signup-final-button:hover {
   background-color: #0056b3;
 }
 
@@ -48,7 +50,7 @@ input {
   background-color: #f0f0f0;
 }
 
-/* ✅ Error message styles (same as login) */
+/* ✅ Error message styles */
 .error-message {
   background-color: rgba(255, 0, 0, 0.1);
   color: red;
